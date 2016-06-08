@@ -42,6 +42,8 @@ class App:
         # corners of the bounding box
         topleft_corner = [0, 0]
         bottomright_corner = [0, 0]
+        bbox_centers = []
+        smoothing_window = 3
 
         while True:
             ret, frame = self.cam.read()
@@ -52,7 +54,7 @@ class App:
             frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             vis = frame.copy()
             bbox_img = frame.copy()
-            
+
             if len(self.tracks) > 0:
                 img0, img1 = self.prev_gray, frame_gray
 
@@ -98,7 +100,34 @@ class App:
                     topleft_corner[1] = min([i[1] for i in bbox_points])
                     bottomright_corner[0] = max([i[0] for i in bbox_points])
                     bottomright_corner[1] = max([i[1] for i in bbox_points])
+
+                    # calculate the center of each bbox for drawing the trajectory
+                    new_center = [topleft_corner[0] + 0.5*(bottomright_corner[0] - topleft_corner[0]),
+                        topleft_corner[1] + 0.5*(bottomright_corner[1] - topleft_corner[1])]
+
+                    # smooth the trajectory
+                    if len(bbox_centers) > smoothing_window:
+                        '''
+                        # start a new trajectory if trajectory has a large discontinuity
+                        if (new_center[0] - bbox_centers[-1][0] > 20) or (new_center[1] - bbox_centers[-1][1] > 20):
+                            bbox_centers = []
+                            continue
+
+                        if self.frame_idx % 550 == 0:
+                            bbox_centers = []
+                            continue
+                        '''
+
+                        new_center[0] = (1.0/smoothing_window)*abs(new_center[0] + bbox_centers[-1][0] + bbox_centers[-2][0])
+                        new_center[1] = (1.0/smoothing_window)*abs(new_center[1] + bbox_centers[-1][1] + bbox_centers[-2][1])
+
+                    bbox_centers.append(tuple(new_center))
+
+                    # draw bbox
                     cv2.rectangle(vis, tuple(topleft_corner), tuple(bottomright_corner), (255, 150, 150), thickness = 3)
+
+                # draw trajectory
+                cv2.polylines(vis, [np.int32(bbox_centers)], False, (255, 150, 150), thickness = 3)
 
             # when frame index is a multiple of the detection interval
             # recalculate good features and 
