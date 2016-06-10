@@ -8,6 +8,6 @@ Technique:
 * Bounding box drawn for moving vehicles.
 
 Usage:
-* lk_track.py [<video_source>]
-* Press <Esc> to exit.
+* lk_track.py [\<video_source\>]
+* Press \<Esc\> to exit.
 
